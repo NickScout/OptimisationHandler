@@ -122,6 +122,8 @@ public class Optimiser {
         double x1;
         double x2;
 
+        int steps = 0;
+
         if (log) System.out.println(String.format("\n\n\n###Looking for local minimum via Dychotomy search###\n\n\n" +
                 "At [%f ; %f] with eps = %f; sigma = %f;\n", a, b, eps, sigm));
 
@@ -137,14 +139,45 @@ public class Optimiser {
             } else {
                 a = x1;
             }
-
-            if (log) System.out.println(String.format("[a,b] trimmed to [%f ; %f]", a,b));
+            steps++;
+            if (log) System.out.println(String.format("step %d: [a,b] trimmed to [%f ; %f]",steps, a,b));
         }
         double res = (a + b)/2;
-        if (log) System.out.println(String.format("\n\n\n###Found minimum x = %f ###\n\n", res));
+        if (log) System.out.println(String.format("\n\n\n###Found minimum x = %f in %d steps ###\n\n", res, steps));
         return res;
     }
 
+    public double Divide_search(Function<Double, Double> f_der, double eps) throws Exception {
+
+        if (eps <= 0) throw new Exception("eps must be > 0");
+        if (this.a.isNaN() || this.b.isNaN()) throw new Exception("could not specify [a,b] borders");
+
+        if (log) System.out.println(String.format("\n\n\n###Looking for local minimum via Division search###\n\n\n" +
+                "At [%f ; %f] with eps = %f;\n", a, b, eps));
+
+        double a = this.a, b = this.b;
+        double x = (a + b)/2;
+
+        int steps = 0;
+
+        do {
+            double F = f_der.apply(x);
+            if (F == 0) {
+                if (log) System.out.println(String.format("\n\n\n###Found minimum x = %f in %d steps ###\n\n", x, steps));
+                return x;
+            }
+            else if(F>0) {
+                b = x;
+            }
+            else if (F < 0) {
+                a = x;
+            }
+            x = (a + b)/2;
+        } while (Math.abs(b - a) < eps);
+        double res = (a + b)/2;
+        if (log) System.out.println(String.format("\n\n\n###Found minimum x = %f in %d steps ###\n\n", x, steps));
+        return res;
+    }
 
     public double Fibonacci_search (double eps)
             throws Exception
@@ -201,24 +234,26 @@ public class Optimiser {
     }
 
     public double Parabols_search(double x, double h, double eps) throws Exception {
-        if (x == 0) throw new Exception("Zero x found!");
+        if (x == 0) throw new Exception("x0 must not equal 0!");
         if (eps <= 0) throw new Exception("eps must be > 0");
 
         while ((function.apply(x + h)-2* function.apply(x)+ function.apply(x - h))/(h*h)<=0) x+= 0.1;
         double x1 = x-0.5*h*(function.apply(x + h)- function.apply(x - h))/(function.apply(x + h)-2* function.apply(x)+ function.apply(x - h));
         if (log) System.out.println(String.format("initial x1 = %f", x1));
+        int step = 0;
         while (Math.abs(x1-x)>eps) {
+            step++;
             x=x1;
             x1=x-0.5*h*(function.apply(x + h)- function.apply(x - h))/(function.apply(x + h)-2* function.apply(x)+ function.apply(x - h));
-            if (log) System.out.println(String.format("iterated xk = %f", x1));
+            if (log) System.out.println(String.format("iterated x[%d] = %f",step, x1));
         }
 
-        if (log) System.out.println(String.format("\n\n\n###Found minimum x = %f ###\n\n", x1));
+        if (log) System.out.println(String.format("\n\n\n###Found minimum x = %f in %d steps###\n\n", x1, step));
 
         return x1;
     }
 
-    
+
 //    public double Parabols_search_as_book_says(double x, double h, double eps) throws Exception {
 //        if (eps <= 0) throw new Exception("eps must be > 0");
 //        if (this.a.isNaN() || this.b.isNaN()) throw new Exception("could not specify [a,b] borders");
@@ -243,9 +278,7 @@ public class Optimiser {
 //
 //    }
 
-
-    public void Print_iterated_function(double step) //iterates F and prints result
-    {
+    public void Print_iterated_function(double step, double a, double b) {
         System.out.println("\n\n\n###Printing function output###\n\n");
         if (step == 0) {
             System.out.println("Printing cancelled due to zero step value");
@@ -255,6 +288,12 @@ public class Optimiser {
         for (double i = a; i <= b ; i+= step) {
             System.out.println(String.format("x = %f; function(x) = %f", i, function.apply(i)));
         }
+    }
+
+    public void Print_iterated_function(double step) throws Exception //iterates F and prints result
+    {
+        Print_iterated_function(step, this.a, this.b);
+        if (this.a.isNaN() || this.b.isNaN()) throw new Exception("could not specify [a,b] borders");
     }
 }
 
